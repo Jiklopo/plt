@@ -28,11 +28,6 @@ isequal = lambda a. lambda b.c_to_bool (and (leq a b) (leq b a));
 
 plus = lambda a. lambda b. a scc b;
 
-cn = lambda cn. lambda n. lambda s. lambda z. if iszero(n) then z else s (cn cn (pred(n)) s z);
-real_to_c = lambda n. cn cn n;
-
-
+fix = lambda f. (lambda x. f (lambda y. x x y)) (lambda x. f (lambda y. x x y));
+g = lambda fct. lambda n. (is0 n) (c1) (c2);
 /* >>>>>>> tests after this line <<<<< */
-c_to_num(real_to_c 7);
-c_to_num(predok(real_to_c 7));
-c_to_num(scc(real_to_c 7));
