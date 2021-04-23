@@ -22,6 +22,7 @@ type term =
   | TmPred of info * term
   | TmIsZero of info * term
   | TmLet of info * string * term * term
+  | TmWrong of info
 
 type binding =
     NameBind 
@@ -78,6 +79,7 @@ let tmmap onvar c t =
   let rec walk c t = match t with
     TmTrue(fi) as t -> t
   | TmFalse(fi) as t -> t
+  | TmWrong(fi) as t -> t
   | TmIf(fi,t1,t2,t3) -> TmIf(fi,walk c t1,walk c t2,walk c t3)
   | TmVar(fi,x,n) -> onvar fi c x n
   | TmAbs(fi,x,t2) -> TmAbs(fi,x,walk (c+1) t2)
@@ -151,7 +153,8 @@ let tmInfo t = match t with
   | TmSucc(fi,_) -> fi
   | TmPred(fi,_) -> fi
   | TmIsZero(fi,_) -> fi
-  | TmLet(fi,_,_,_) -> fi 
+  | TmLet(fi,_,_,_) -> fi
+  | TmWrong(fi) -> fi
 
 (* ---------------------------------------------------------------------- *)
 (* Printing *)
@@ -228,7 +231,8 @@ and printtm_PathTerm outer ctx t = match t with
   | t -> printtm_ATerm outer ctx t
 
 and printtm_ATerm outer ctx t = match t with
-    TmTrue(_) -> pr "true"
+    TmWrong(fi) -> pr "wrong >:("
+  | TmTrue(_) -> pr "true"
   | TmFalse(_) -> pr "false"
   | TmVar(fi,x,n) ->
       if ctxlength ctx = n then

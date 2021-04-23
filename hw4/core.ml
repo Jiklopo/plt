@@ -12,11 +12,23 @@ let rec isnumericval ctx t = match t with
   | TmSucc(_,t1) -> isnumericval ctx t1
   | _ -> false
 
+let rec isbadnat t = match t with
+    TmWrong(_) -> true
+  | TmTrue(_) -> true
+  | TmFalse(_) -> true
+  | _ -> false
+
+let rec isbadbool ctx t = match t with
+    TmWrong(_) -> true
+  | t when isnumericval ctx t -> true
+  | _ -> false
+
 let rec isval ctx t = match t with
     TmTrue(_)  -> true
   | TmFalse(_) -> true
   | TmFloat _  -> true
   | TmString _  -> true
+  | TmWrong(_) -> true
   | t when isnumericval ctx t  -> true
   | TmAbs(_,_,_) -> true
   | TmRecord(_,fields) -> List.for_all (fun (l,ti) -> isval ctx ti) fields
@@ -27,6 +39,8 @@ let rec eval1 ctx t = match t with
       t2
   | TmIf(_,TmFalse(_),t2,t3) ->
       t3
+  | TmIf(_, badbool, t2, t3) when (isbadbool ctx badbool) ->
+      TmWrong(dummyinfo)
   | TmIf(fi,t1,t2,t3) ->
       let t1' = eval1 ctx t1 in
       TmIf(fi, t1', t2, t3)
@@ -66,10 +80,14 @@ let rec eval1 ctx t = match t with
       TmTimesfloat(fi,t1,t2') 
   | TmTimesfloat(fi,t1,t2) ->
       let t1' = eval1 ctx t1 in
-      TmTimesfloat(fi,t1',t2) 
+      TmTimesfloat(fi,t1',t2)
+  | TmSucc(_, badnat) when (isbadnat badnat) ->
+      TmWrong(dummyinfo)
   | TmSucc(fi,t1) ->
       let t1' = eval1 ctx t1 in
       TmSucc(fi, t1')
+  | TmPred(_, badnat) when (isbadnat badnat) ->
+      TmWrong(dummyinfo)
   | TmPred(_,TmZero(_)) ->
       TmZero(dummyinfo)
   | TmPred(_,TmSucc(_,nv1)) when (isnumericval ctx nv1) ->
@@ -77,6 +95,8 @@ let rec eval1 ctx t = match t with
   | TmPred(fi,t1) ->
       let t1' = eval1 ctx t1 in
       TmPred(fi, t1')
+  | TmIsZero(_, badnat) when (isbadnat badnat) ->
+      TmWrong(dummyinfo)
   | TmIsZero(_,TmZero(_)) ->
       TmTrue(dummyinfo)
   | TmIsZero(_,TmSucc(_,nv1)) when (isnumericval ctx nv1) ->
