@@ -5,16 +5,36 @@ open Support.Pervasive
 
 (* ------------------------   EVALUATION  ------------------------ *)
 
+exception NoRuleApplies
+
+let rec isnumericval ctx t = match t with
+    TmZero(_) -> true
+  | TmSucc(_,t1) -> isnumericval ctx t1
+  | _ -> false
+
 let rec isval ctx t = match t with
     TmTrue(_)  -> true
   | TmFalse(_) -> true
-  | TmAbs(_,_,_,_) -> true
+  | TmFloat _  -> true
+  | TmString _  -> true
+  | t when isnumericval ctx t  -> true
+  | TmAbs(_,_,_) -> true
+  | TmRecord(_,fields) -> List.for_all (fun (l,ti) -> isval ctx ti) fields
   | _ -> false
 
-exception NoRuleApplies
-
 let rec eval1 ctx t = match t with
-    TmApp(fi,TmAbs(_,x,tyT11,t12),v2) when isval ctx v2 ->
+    TmIf(_,TmTrue(_),t2,t3) ->
+      t2
+  | TmIf(_,TmFalse(_),t2,t3) ->
+      t3
+  | TmIf(fi,t1,t2,t3) ->
+      let t1' = eval1 ctx t1 in
+      TmIf(fi, t1', t2, t3)
+  | TmVar(fi,n,_) ->
+      (match getbinding fi ctx n with
+          TmAbbBind(t) -> t 
+        | _ -> raise NoRuleApplies)
+  | TmApp(fi,TmAbs(_,x,t12),v2) when isval ctx v2 ->
       termSubstTop v2 t12
   | TmApp(fi,v1,t2) when isval ctx v1 ->
       let t2' = eval1 ctx t2 in
@@ -22,13 +42,53 @@ let rec eval1 ctx t = match t with
   | TmApp(fi,t1,t2) ->
       let t1' = eval1 ctx t1 in
       TmApp(fi, t1', t2)
-  | TmIf(_,TmTrue(_),t2,t3) ->
-      t2
-  | TmIf(_,TmFalse(_),t2,t3) ->
-      t3
-  | TmIf(fi,t1,t2,t3) ->
+  | TmRecord(fi,fields) ->
+      let rec evalafield l = match l with 
+        [] -> raise NoRuleApplies
+      | (l,vi)::rest when isval ctx vi -> 
+          let rest' = evalafield rest in
+          (l,vi)::rest'
+      | (l,ti)::rest -> 
+          let ti' = eval1 ctx ti in
+          (l, ti')::rest
+      in let fields' = evalafield fields in
+      TmRecord(fi, fields')
+  | TmProj(fi, (TmRecord(_, fields) as v1), l) when isval ctx v1 ->
+      (try List.assoc l fields
+       with Not_found -> raise NoRuleApplies)
+  | TmProj(fi, t1, l) ->
       let t1' = eval1 ctx t1 in
-      TmIf(fi, t1', t2, t3)
+      TmProj(fi, t1', l)
+  | TmTimesfloat(fi,TmFloat(_,f1),TmFloat(_,f2)) ->
+      TmFloat(fi, f1 *. f2)
+  | TmTimesfloat(fi,(TmFloat(_,f1) as t1),t2) ->
+      let t2' = eval1 ctx t2 in
+      TmTimesfloat(fi,t1,t2') 
+  | TmTimesfloat(fi,t1,t2) ->
+      let t1' = eval1 ctx t1 in
+      TmTimesfloat(fi,t1',t2) 
+  | TmSucc(fi,t1) ->
+      let t1' = eval1 ctx t1 in
+      TmSucc(fi, t1')
+  | TmPred(_,TmZero(_)) ->
+      TmZero(dummyinfo)
+  | TmPred(_,TmSucc(_,nv1)) when (isnumericval ctx nv1) ->
+      nv1
+  | TmPred(fi,t1) ->
+      let t1' = eval1 ctx t1 in
+      TmPred(fi, t1')
+  | TmIsZero(_,TmZero(_)) ->
+      TmTrue(dummyinfo)
+  | TmIsZero(_,TmSucc(_,nv1)) when (isnumericval ctx nv1) ->
+      TmFalse(dummyinfo)
+  | TmIsZero(fi,t1) ->
+      let t1' = eval1 ctx t1 in
+      TmIsZero(fi, t1')
+  | TmLet(fi,x,v1,t2) when isval ctx v1 ->
+      termSubstTop v1 t2 
+  | TmLet(fi,x,t1,t2) ->
+      let t1' = eval1 ctx t1 in
+      TmLet(fi, x, t1', t2) 
   | _ -> 
       raise NoRuleApplies
 
@@ -37,30 +97,8 @@ let rec eval ctx t =
       in eval ctx t'
   with NoRuleApplies -> t
 
-(* ------------------------   TYPING  ------------------------ *)
-
-let rec typeof ctx t =
-  match t with
-    TmVar(fi,i,_) -> getTypeFromContext fi ctx i
-  | TmAbs(fi,x,tyT1,t2) ->
-      let ctx' = addbinding ctx x (VarBind(tyT1)) in
-      let tyT2 = typeof ctx' t2 in
-      TyArr(tyT1, tyT2)
-  | TmApp(fi,t1,t2) ->
-      let tyT1 = typeof ctx t1 in
-      let tyT2 = typeof ctx t2 in
-      (match tyT1 with
-          TyArr(tyT11,tyT12) ->
-            if (=) tyT2 tyT11 then tyT12
-            else error fi "parameter type mismatch"
-        | _ -> error fi "arrow type expected")
-  | TmTrue(fi) -> 
-      TyBool
-  | TmFalse(fi) -> 
-      TyBool
-  | TmIf(fi,t1,t2,t3) ->
-     if (=) (typeof ctx t1) TyBool then
-       let tyT2 = typeof ctx t2 in
-       if (=) tyT2 (typeof ctx t3) then tyT2
-       else error fi "arms of conditional have different types"
-     else error fi "guard of conditional not a boolean"
+let evalbinding ctx b = match b with
+    TmAbbBind(t) ->
+      let t' = eval ctx t in 
+      TmAbbBind(t')
+  | bind -> bind
