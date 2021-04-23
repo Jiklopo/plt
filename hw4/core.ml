@@ -13,13 +13,13 @@ let rec isnumericval ctx t = match t with
   | _ -> false
 
 let rec isbadnat t = match t with
-    TmWrong(_) -> true
+    TmWrong(_,_) -> true
   | TmTrue(_) -> true
   | TmFalse(_) -> true
   | _ -> false
 
 let rec isbadbool ctx t = match t with
-    TmWrong(_) -> true
+    TmWrong(_,_) -> true
   | t when isnumericval ctx t -> true
   | _ -> false
 
@@ -28,7 +28,7 @@ let rec isval ctx t = match t with
   | TmFalse(_) -> true
   | TmFloat _  -> true
   | TmString _  -> true
-  | TmWrong(_) -> true
+  | TmWrong(_,_) -> true
   | t when isnumericval ctx t  -> true
   | TmAbs(_,_,_) -> true
   | TmRecord(_,fields) -> List.for_all (fun (l,ti) -> isval ctx ti) fields
@@ -40,7 +40,7 @@ let rec eval1 ctx t = match t with
   | TmIf(_,TmFalse(_),t2,t3) ->
       t3
   | TmIf(_, badbool, t2, t3) when (isbadbool ctx badbool) ->
-      TmWrong(dummyinfo)
+      TmWrong(dummyinfo,"The if guard must be boolean! >:(")
   | TmIf(fi,t1,t2,t3) ->
       let t1' = eval1 ctx t1 in
       TmIf(fi, t1', t2, t3)
@@ -82,12 +82,12 @@ let rec eval1 ctx t = match t with
       let t1' = eval1 ctx t1 in
       TmTimesfloat(fi,t1',t2)
   | TmSucc(_, badnat) when (isbadnat badnat) ->
-      TmWrong(dummyinfo)
+      TmWrong(dummyinfo,"You can only get successor of a number! >:(")
   | TmSucc(fi,t1) ->
       let t1' = eval1 ctx t1 in
       TmSucc(fi, t1')
   | TmPred(_, badnat) when (isbadnat badnat) ->
-      TmWrong(dummyinfo)
+      TmWrong(dummyinfo,"You can only get predecessor of a number! >:(")
   | TmPred(_,TmZero(_)) ->
       TmZero(dummyinfo)
   | TmPred(_,TmSucc(_,nv1)) when (isnumericval ctx nv1) ->
@@ -96,7 +96,7 @@ let rec eval1 ctx t = match t with
       let t1' = eval1 ctx t1 in
       TmPred(fi, t1')
   | TmIsZero(_, badnat) when (isbadnat badnat) ->
-      TmWrong(dummyinfo)
+      TmWrong(dummyinfo,"You can only know if a number is zero! >:(")
   | TmIsZero(_,TmZero(_)) ->
       TmTrue(dummyinfo)
   | TmIsZero(_,TmSucc(_,nv1)) when (isnumericval ctx nv1) ->

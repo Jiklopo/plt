@@ -21,7 +21,7 @@ type term =
   | TmPred of info * term
   | TmIsZero of info * term
   | TmLet of info * string * term * term
-  | TmWrong of info
+  | TmWrong of info * string
 
 type binding =
     NameBind 
