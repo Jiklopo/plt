@@ -50,7 +50,23 @@ in
 
 let alreadyImported = ref ([] : string list)
 
-let rec process_command ctx cmd = match cmd with
+let rec process_file f ctx =
+  if List.mem f (!alreadyImported) then
+    ctx
+  else (
+    alreadyImported := f :: !alreadyImported;
+    let cmds,_ = parseFile f ctx in
+    let g ctx c =  
+      open_hvbox 0;
+      let results = process_command ctx c in
+      print_flush();
+      results
+    in
+      List.fold_left g ctx cmds)
+
+and process_command ctx cmd = match cmd with
+    Import(f) -> 
+      process_file f ctx
   | Eval(fi,t) -> 
       let t' = eval ctx t in
       printtm_ATerm true ctx t'; 
@@ -62,17 +78,6 @@ let rec process_command ctx cmd = match cmd with
       pr x; pr " "; prbinding ctx bind'; force_newline();
       addbinding ctx x bind'
   
-let process_file f ctx =
-  alreadyImported := f :: !alreadyImported;
-  let cmds,_ = parseFile f ctx in
-  let g ctx c =  
-    open_hvbox 0;
-    let results = process_command ctx c in
-    print_flush();
-    results
-  in
-    List.fold_left g ctx cmds
-
 let main () = 
   let inFile = parseArgs() in
   let _ = process_file inFile emptycontext in

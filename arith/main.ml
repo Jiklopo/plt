@@ -50,24 +50,29 @@ in
 
 let alreadyImported = ref ([] : string list)
 
-let rec process_command  cmd = match cmd with
+let rec process_file f  =
+  if List.mem f (!alreadyImported) then
+    ()
+  else (
+    alreadyImported := f :: !alreadyImported;
+    let cmds = parseFile f in
+    let g  c =  
+      open_hvbox 0;
+      let results = process_command  c in
+      print_flush();
+      results
+    in
+      List.iter g  cmds)
+
+and process_command  cmd = match cmd with
+    Import(f) -> 
+      process_file f 
   | Eval(fi,t) -> 
       let t' = eval t in
       printtm_ATerm true t'; 
       force_newline();
       ()
   
-let process_file f  =
-  alreadyImported := f :: !alreadyImported;
-  let cmds = parseFile f in
-  let g  c =  
-    open_hvbox 0;
-    let results = process_command  c in
-    print_flush();
-    results
-  in
-    List.iter g  cmds
-
 let main () = 
   let inFile = parseArgs() in
   let _ = process_file inFile  in

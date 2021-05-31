@@ -22,6 +22,7 @@ open Syntax
  */
 
 /* Keyword tokens */
+%token <Support.Error.info> IMPORT
 %token <Support.Error.info> IF
 %token <Support.Error.info> THEN
 %token <Support.Error.info> ELSE
@@ -102,6 +103,7 @@ toplevel :
 
 /* A top-level command */
 Command :
+    IMPORT STRINGV { (Import($2.v)) }
   | Term 
       { (let t = $1 in Eval(tmInfo t,t)) }
 

@@ -11,31 +11,14 @@ open Support.Error
 
 let reservedWords = [
   (* Keywords *)
-  ("type", fun i -> Parser.TYPE i);
-  ("inert", fun i -> Parser.INERT i);
+  ("import", fun i -> Parser.IMPORT i);
+  ("lambda", fun i -> Parser.LAMBDA i);
   ("if", fun i -> Parser.IF i);
   ("then", fun i -> Parser.THEN i);
   ("else", fun i -> Parser.ELSE i);
   ("true", fun i -> Parser.TRUE i);
   ("false", fun i -> Parser.FALSE i);
   ("Bool", fun i -> Parser.BOOL i);
-  ("case", fun i -> Parser.CASE i);
-  ("of", fun i -> Parser.OF i);
-  ("as", fun i -> Parser.AS i);
-  ("lambda", fun i -> Parser.LAMBDA i);
-  ("let", fun i -> Parser.LET i);
-  ("in", fun i -> Parser.IN i);
-  ("fix", fun i -> Parser.FIX i);
-  ("letrec", fun i -> Parser.LETREC i);
-  ("String", fun i -> Parser.USTRING i);
-  ("unit", fun i -> Parser.UNIT i);
-  ("Unit", fun i -> Parser.UUNIT i);
-  ("timesfloat", fun i -> Parser.TIMESFLOAT i);
-  ("Float", fun i -> Parser.UFLOAT i);
-  ("succ", fun i -> Parser.SUCC i);
-  ("pred", fun i -> Parser.PRED i);
-  ("iszero", fun i -> Parser.ISZERO i);
-  ("Nat", fun i -> Parser.NAT i);
   
   (* Symbols *)
   ("_", fun i -> Parser.USCORE i);
@@ -110,7 +93,7 @@ let info lexbuf =
 
 let text = Lexing.lexeme
 
-let stringBuffer = ref (String.create 2048)
+let stringBuffer = ref (Bytes.create 2048)
 let stringEnd = ref 0
 
 let resetStr () = stringEnd := 0
@@ -119,21 +102,21 @@ let addStr ch =
   let x = !stringEnd in
   let buffer = !stringBuffer
 in
-  if x = String.length buffer then
+  if x = Bytes.length buffer then
     begin
-      let newBuffer = String.create (x*2) in
-      String.blit buffer 0 newBuffer 0 x;
-      String.set newBuffer x ch;
+      let newBuffer = Bytes.create (x*2) in
+      Bytes.blit buffer 0 newBuffer 0 x;
+      Bytes.set newBuffer x ch;
       stringBuffer := newBuffer;
       stringEnd := x+1
     end
   else
     begin
-      String.set buffer x ch;
+      Bytes.set buffer x ch;
       stringEnd := x+1
     end
 
-let getStr () = String.sub (!stringBuffer) 0 (!stringEnd)
+let getStr () = Bytes.sub_string (!stringBuffer) 0 (!stringEnd)
 
 let extractLineno yytext offset =
   int_of_string (String.sub yytext offset (String.length yytext - offset))
@@ -145,7 +128,7 @@ let extractLineno yytext offset =
 rule main = parse
   [' ' '\009' '\012']+     { main lexbuf }
 
-| [' ' '\009' '\012']*("\r")?"\n" { newline lexbuf; main lexbuf }
+| [' ' '\009' '\012']*"\n" { newline lexbuf; main lexbuf }
 
 | "*/" { error (info lexbuf) "Unmatched end of comment" }
 

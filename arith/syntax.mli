@@ -14,6 +14,7 @@ type term =
   | TmIsZero of info * term
 
 type command =
+    Import of string
   | Eval of info * term
 
 

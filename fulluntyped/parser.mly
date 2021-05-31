@@ -22,18 +22,19 @@ open Syntax
  */
 
 /* Keyword tokens */
+%token <Support.Error.info> IMPORT
 %token <Support.Error.info> IF
 %token <Support.Error.info> THEN
 %token <Support.Error.info> ELSE
 %token <Support.Error.info> TRUE
 %token <Support.Error.info> FALSE
+%token <Support.Error.info> LET
+%token <Support.Error.info> IN
 %token <Support.Error.info> LAMBDA
-%token <Support.Error.info> TIMESFLOAT
 %token <Support.Error.info> SUCC
 %token <Support.Error.info> PRED
 %token <Support.Error.info> ISZERO
-%token <Support.Error.info> LET
-%token <Support.Error.info> IN
+%token <Support.Error.info> TIMESFLOAT
 
 /* Identifier and constant value tokens */
 %token <string Support.Error.withinfo> UCID  /* uppercase-initial */
@@ -117,6 +118,7 @@ toplevel :
 
 /* A top-level command */
 Command :
+    IMPORT STRINGV { fun ctx -> (Import($2.v)),ctx }
   | Term 
       { fun ctx -> (let t = $1 ctx in Eval(tmInfo t,t)),ctx }
   | LCID Binder
@@ -134,6 +136,10 @@ Term :
       { $1 }
   | IF Term THEN Term ELSE Term
       { fun ctx -> TmIf($1, $2 ctx, $4 ctx, $6 ctx) }
+  | LET LCID EQ Term IN Term
+      { fun ctx -> TmLet($1, $2.v, $4 ctx, $6 (addname ctx $2.v)) }
+  | LET USCORE EQ Term IN Term
+      { fun ctx -> TmLet($1, "_", $4 ctx, $6 (addname ctx "_")) }
   | LAMBDA LCID DOT Term 
       { fun ctx ->
           let ctx1 = addname ctx $2.v in
@@ -142,10 +148,6 @@ Term :
       { fun ctx ->
           let ctx1 = addname ctx "_" in
           TmAbs($1, "_", $4 ctx1) }
-  | LET LCID EQ Term IN Term
-      { fun ctx -> TmLet($1, $2.v, $4 ctx, $6 (addname ctx $2.v)) }
-  | LET USCORE EQ Term IN Term
-      { fun ctx -> TmLet($1, "_", $4 ctx, $6 (addname ctx "_")) }
 
 AppTerm :
     PathTerm
@@ -155,14 +157,14 @@ AppTerm :
           let e1 = $1 ctx in
           let e2 = $2 ctx in
           TmApp(tmInfo e1,e1,e2) }
-  | TIMESFLOAT PathTerm PathTerm
-      { fun ctx -> TmTimesfloat($1, $2 ctx, $3 ctx) }
   | SUCC PathTerm
       { fun ctx -> TmSucc($1, $2 ctx) }
   | PRED PathTerm
       { fun ctx -> TmPred($1, $2 ctx) }
   | ISZERO PathTerm
       { fun ctx -> TmIsZero($1, $2 ctx) }
+  | TIMESFLOAT PathTerm PathTerm
+      { fun ctx -> TmTimesfloat($1, $2 ctx, $3 ctx) }
 
 PathTerm :
     PathTerm DOT LCID
@@ -178,26 +180,26 @@ PathTerm :
 ATerm :
     LPAREN Term RPAREN  
       { $2 } 
+  | STRINGV
+      { fun ctx -> TmString($1.i, $1.v) }
+  | LCID 
+      { fun ctx ->
+          TmVar($1.i, name2index $1.i ctx $1.v, ctxlength ctx) }
   | TRUE
       { fun ctx -> TmTrue($1) }
   | FALSE
       { fun ctx -> TmFalse($1) }
-  | LCID 
-      { fun ctx ->
-          TmVar($1.i, name2index $1.i ctx $1.v, ctxlength ctx) }
   | LCURLY Fields RCURLY
       { fun ctx ->
           TmRecord($1, $2 ctx 1) }
-  | FLOATV
-      { fun ctx -> TmFloat($1.i, $1.v) }
-  | STRINGV
-      { fun ctx -> TmString($1.i, $1.v) }
   | INTV
       { fun ctx ->
           let rec f n = match n with
               0 -> TmZero($1.i)
             | n -> TmSucc($1.i, f (n-1))
           in f $1.v }
+  | FLOATV
+      { fun ctx -> TmFloat($1.i, $1.v) }
 
 Fields :
     /* empty */
