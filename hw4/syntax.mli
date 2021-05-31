@@ -4,30 +4,25 @@ open Support.Pervasive
 open Support.Error
 
 (* Data type definitions *)
+type ty =
+    TyArr of ty * ty
+  | TyBool
+  | TyWrong of string
+
 type term =
-    TmTrue of info
+    TmVar of info * int * int
+  | TmAbs of info * string * ty * term
+  | TmApp of info * term * term
+  | TmTrue of info
   | TmFalse of info
   | TmIf of info * term * term * term
-  | TmVar of info * int * int
-  | TmAbs of info * string * term
-  | TmApp of info * term * term
-  | TmRecord of info * (string * term) list
-  | TmProj of info * term * string
-  | TmFloat of info * float
-  | TmTimesfloat of info * term * term
-  | TmString of info * string
-  | TmZero of info
-  | TmSucc of info * term
-  | TmPred of info * term
-  | TmIsZero of info * term
-  | TmLet of info * string * term * term
-  | TmWrong of info * string
 
 type binding =
     NameBind 
-  | TmAbbBind of term
+  | VarBind of ty
 
 type command =
+    Import of string
   | Eval of info * term
   | Bind of info * string * binding
 
@@ -41,7 +36,7 @@ val index2name : info -> context -> int -> string
 val getbinding : info -> context -> int -> binding
 val name2index : info -> context -> string -> int
 val isnamebound : context -> string -> bool
-
+val getTypeFromContext : info -> context -> int -> ty
 
 (* Shifting and substitution *)
 val termShift: int -> term -> term
@@ -50,6 +45,7 @@ val termSubstTop: term -> term -> term
 (* Printing *)
 val printtm: context -> term -> unit
 val printtm_ATerm: bool -> context -> term -> unit
+val printty : ty -> unit
 val prbinding : context -> binding -> unit
 
 (* Misc *)

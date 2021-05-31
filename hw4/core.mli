@@ -7,4 +7,4 @@ open Syntax
 open Support.Error
 
 val eval : context -> term -> term 
-val evalbinding : context -> binding -> binding 
+val typeof : context -> term -> ty
