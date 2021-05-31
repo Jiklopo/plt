@@ -1,0 +1,137 @@
+#lambda calc
+f1 = lambda x. x
+
+#python analog
+def f1(x):
+    return x
+
+#lambda calc application (put values into the function)
+f1 1 -> (lambda x. x) 1 -> 1
+
+f1(1) #python application 
+
+f2 = lambda x. lambda y. y
+
+def f2(x, y):
+    return y
+
+#not allowed in python!
+f2(1) 
+
+#but allowed in lambda calc
+f2 1 -> (lambda x. lambda y. y) 1 -> lambda y. y
+
+f2 1 f1 -> (lambda x. lambda y. y) 1 f1 -> (lambda y. y) f1 -> f1
+
+:=: means identical in python
+(lambda x. lambda y. y) 1 2 :=:  f2(1, 2)
+
+lambda x. lambda y. y 1 2
+#f2 would be this
+def f2(x, y):
+    return y 1 2
+
+
+
+#Church booleans
+tru = lambda t. lambda f. t;
+fls = lambda t. lambda f. f;
+
+def tru(t, f):
+    if True:
+        return t
+    else:
+        return f
+
+def fls(t, f):
+    if False:
+        return t
+    else:
+        return f
+
+# c is some Church bool (tru or fls)
+# because we do not know what c is
+# c t1 t2 :=: if c: t1 else: t2
+
+
+#OR
+def or(a, b):
+    if a:
+        return True
+    else:
+        return b
+
+or = lambda a. lambda b. a tru b
+#example
+or fls fls -> (lambda a. lambda b. a tru b) fls fls -> (lambda b. fls tru b) fls -> 
+    (lambda b. fls tru b) fls -> fls tru fls -> (lambda t. lambda f. f) tru fls ->
+    (lambda f. f) fls -> fls
+
+#AND
+def and(a, b):
+    if a:
+        return b
+    else:
+        return False
+
+and = lambda a. lambda b. a b fls
+
+#example
+and fls tru -> (lambda a. lambda b. a b fls) fls tru -> (lambda b. fls b fls) tru ->
+    fls tru fls -> (lambda t. lambda f. f) tru fls -> (lambda f. f) fls -> fls
+
+#NOT
+def not(a):
+    if a:
+        return False
+    else:
+        return True
+
+not = lambda a. a fls tru
+
+#XOR
+def xor(a, b):
+    if a:
+        return not b
+    else:
+        return b
+
+xor = lambda a. lambda b. a (not b) b
+
+#NAND
+nand = lambda a. lambda b. not (and a b)
+
+
+
+#Church numerals
+c0 = lambda s. lambda z. z;
+c1 = lambda s. lambda z. s (z);
+c2 = lambda s. lambda z. s (s(z));
+c3 = lambda s. lambda z. s (s(s(z)));
+c4 = lambda s. lambda z. s (s(s(s(z))));
+c5 = lambda s. lambda z. s (s(s(s(s(z)))));
+......
+#example
+c3 succ 0 ->* succ(succ(succ(0))) ->* 3;
+
+pair = lambda f. lambda s. lambda b. b f s;
+fst = lambda p. p tru;
+snd = lambda p. p fls;
+
+#example
+p = pair 1 2
+####pair 1 2 -> (lambda f. lambda s. lambda b. b f s) 1 2->* lambda b. b 1 2
+fst p -> (lambda p. p tru) p ->* 1
+snd p ->* 2
+
+zz = pair c0 c0; #(0, 0)
+
+step = lambda p.lambda s. pair (snd p) (s (snd p));
+
+def step(pair):
+    pair[0] = pair[1]
+    pair[1]++
+    return pair
+
+pred = lambda n. fst (n step zz);
+pred c5 -> fst (c5 step zz) ->* fst (c4, c5) -> c4
