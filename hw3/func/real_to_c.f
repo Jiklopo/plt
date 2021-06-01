@@ -17,6 +17,8 @@ zz = pair c0 c0;
 step = lambda p. pair (snd p) (scc (snd p));
 predok = lambda n. fst (n step zz);
 
+minus = lambda a. lambda b. b predok a;
+
 plus = lambda a. lambda b. a scc b;
 
 real_to_c = fix (lambda cn.
@@ -26,8 +28,13 @@ real_to_c = fix (lambda cn.
             else s (cn (pred n) s z)
 );
 /* >>>>>>> tests after this line <<<<< */
+c2 = real_to_c 2;
+c3 = real_to_c 3;
+c4 = real_to_c 4;
 c7 = real_to_c 7;
 c11 = real_to_c 11;
 c_to_real(c7);
 c_to_real(predok(c7));
 c_to_real(scc(c11));
+c_to_real(plus c2 c3);
+c_to_real(minus c11 c7);
