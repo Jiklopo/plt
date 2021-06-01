@@ -1,0 +1,38 @@
+#Types
+Types == classes
+int t1; #well-typed
+t2; #not well-typed
+
+safety = progress + preservation
+term is well-typed if it has a type
+progress means if term is well-typed it is not stuck
+preservation means if term is well-typed then its derivations will be well-typed,
+e.g. t1 -> t2. if t1 is well-typed, then t2 is also well-typed
+
+#c++
+int f1(int x){
+    return x;
+}
+
+#typed lambda calc
+f1 = lambda x:Int. x
+
+type of f1 is Int -> Int
+it means that it takes Int and return Int
+
+t1 = f1 (f1 3)
+t1 is of type Int, it is well-typed
+
+t2 = f1 (f1 True)
+t2 is not well-typed, because True is not Int
+
+iszero is of type Nat->Bool
+pred is of type Nat -> Nat
+
+f = lambda x:Nat. lambda y:Bool. x
+f is of type (Nat -> (Bool -> Nat))
+
+#Context
+Г, z:Nat |-- f2 = lambda x:Nat. lambda y:Bool. z
+Since we know type of, type of f2 is (Nat -> (Bool -> Nat))
+

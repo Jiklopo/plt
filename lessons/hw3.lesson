@@ -110,10 +110,22 @@ c2 = lambda s. lambda z. s (s(z));
 c3 = lambda s. lambda z. s (s(s(z)));
 c4 = lambda s. lambda z. s (s(s(s(z))));
 c5 = lambda s. lambda z. s (s(s(s(s(z)))));
+c6 = lambda s. lambda z. s (c5 s z);
 ......
+
+#example
+c3 f a ->* f(f(f(a)))
+
+def cn(n, s, z):
+    temp = z
+    for in range(n):
+        temp = s(temp)
+    return temp
+
 #example
 c3 succ 0 ->* succ(succ(succ(0))) ->* 3;
 
+#pair
 pair = lambda f. lambda s. lambda b. b f s;
 fst = lambda p. p tru;
 snd = lambda p. p fls;
@@ -124,14 +136,172 @@ p = pair 1 2
 fst p -> (lambda p. p tru) p ->* 1
 snd p ->* 2
 
-zz = pair c0 c0; #(0, 0)
 
-step = lambda p.lambda s. pair (snd p) (s (snd p));
+#SCC
+scc = lambda n. lambda s. lambda z. s n
+scc c1 = lambda s. lambda z. s c1
+#let's make regular number from church numeral
+(lambda s. lambda z. s c1) succ 0 ->* succ c1 #This is wrong!!!!!
+
+scc = lambda n. lambda s. lambda z. s (n s z)
+scc c1 = lambda s. lambda z. s (c1 s z)
+#let's make regular number from church numeral
+(lambda s. lambda z. s (c1 s z)) succ 0 ->* succ (c1 succ 0) ->
+    succ ((lambda s. lambda z. s (z)) succ 0) -> *
+    succ (succ (0)) -> 2 #this is what we need!
+
+
+#PRED
+zz = pair c0 c0; #(0, 0)
+step = lambda p. pair (snd p) (scc (snd p));
 
 def step(pair):
     pair[0] = pair[1]
     pair[1]++
     return pair
-
 pred = lambda n. fst (n step zz);
 pred c5 -> fst (c5 step zz) ->* fst (c4, c5) -> c4
+
+#MINUS
+4 - 2 = 4 - 1 - 1 = 2
+3 - 4 = 3 - 1 - 1 - 1 - 1 ->* 0 - 1 -> 0
+
+minus = lambda a. lambda b. b pred a
+
+#example
+minus c3 c1 ->* c1 pred c3 ->* pred c3 ->* c2
+minus c3 c5 ->* c5 pred c3 ->* pred(pred(pred(pred(pred(c3))))) -> *
+    pred(pred(c0)) ->* c0
+
+#PLUS
+plus = lambda a. lambda b. a scc b;
+
+#MULT
+2 * 4 -> 2 + 2 + 2 + 2 + 0:=: plus 2 (plus 2 (plus 2 (plus 2 0)))
+mult = lambda a. lambda b. b (plus a) c0;
+
+#example
+mult c2 c3 ->* c3 (plus c2) c0 ->* plus c2 (plus c2 (plus c2 c0)) ->* c6
+
+
+#ISZRO
+def always_false(x):
+    return False
+
+iszro = lambda n. n (lambda x. fls) tru
+iszro c0 ->* c0 (lambda x. fls) tru -> tru
+iszro c2 ->* c2 (lambda x. fls) tru ->* (lambda x. fls) ((lambda x. fls) tru) ->
+    (lambda x. fls) fls -> fls
+
+
+#LEQ <=
+leq = lambda a. lambda b. iszro (minus a b) # a <= b
+
+#ISEQ
+(a <= b) and (b <= a) then a = b
+iseq = lambda a. lambda b. and (leq a b) (leq b a)
+
+#RECURSION
+f1 = lambda a. f1 a; #not allowed
+
+def fact(n):
+    if n == 0:
+        return 1
+    return n * fact(n-1)
+
+#fixed-point combinator or Z-combinator
+fix = lambda f. (lambda x. f (lambda y. x x y)) (lambda x. f (lambda y. x x y));
+
+fix g ->* g fix g ->* ....
+
+
+#FACT
+g = lambda fct.
+    lambda n.
+        (iszro n) c1 (mult n (fct (pred n)))
+
+fact = fix g;
+fact c3 -> (iszro c3) c1 (mult c3 (fct (pred c3))) -> fls c1 (mult c3 (fct (pred c3))) ->*
+    mult c3 (fact (pred c3)) ->* mult c3 (mult c2 (fact c1)) ->* mult c3 (mult c2 (mult c1 (fact c0))) ->*
+    mult c3 (mult c2 (mult c1 c1)) ->* c6
+
+
+#FIB
+fib = fix (lambda fb.
+    lambda n.
+        if iszero n
+            then 1
+            else plus (fb (pred n)) (fb (pred (pred n)))
+)
+
+
+#EVALUATION STRATEGIES
+#abstraction = function
+#reduction = evaluation
+#redex = reducible expression #opposite of normal form
+
+#python example
+def square(a, b):
+    return a * a
+#call-by-value
+square(1 + 1, 2 + 2) -> square(2, 2 + 2) -> square(2, 4) -> 2 * 2 -> 4
+#call-by-name
+square(1 + 1, 2 + 2) -> (1+1) * (1+1) -> 2 * (1+1) -> 2 * 2 -> 4
+
+#lambda calc example
+f = (lambda x. (lambda y. y) x) (lambda z. z z)
+
+f_z = lambda z. z z
+def f_z(z):
+    return z(z)
+
+#call-by-value
+(lambda x. (lambda y. y) x) (lambda z. z z) -> (lambda y. y) (lambda z. z z) -> lambda z. z z
+lambda y. (lambda z. z z) (lambda a. a) -> lambda y. (lambda a. a) (lambda a. a) ->
+    lambda y. lambda a. a
+
+#call-by-name
+(lambda x. lambda y. (lambda z. z z) (lambda a. a x)) #cannot reduce inside abstractions
+(lambda x. lambda y. (lambda z. z z) x) (lambda a. a) -> 
+    lambda y. (lambda z. z z) (lambda a. a)
+
+#free(global) and bound(local) variables
+int a;
+char c;
+def f1(x):
+    a #free
+    c #free
+    x #bound
+
+#quiz 1
+3. if (if true then false else succ(true)) then succ (iszero false) else succ(succ(pred(0))) ->
+    if false then succ (iszero false) else succ(succ(pred(0))) -> succ(succ(pred(0))) ->* 2
+
+6.(lambda z. ((lambda s. s q) (lambda q. q z)) (lambda z. z z))
+only q in (lambda s. s q) is free
+
+7. a) lambda s. lambda z. s ((lambda s. lambda z. s (s (s z))) s z) #normal form
+   b) lambda s. lambda z. s ((lambda s. lambda z. s (s (s z))) s z) ->
+        lambda s. lambda z. s (s (s (s z))) = c4
+
+8. a) (lambda z. z) (lambda z. z z) (lambda z. z q) -> (lambda z. z z) (lambda z. z q) ->
+        (lambda z. z q) (lambda z. z q) -> (lambda z. z q) q -> q q
+   b) (lambda y. lambda z. y z) (lambda x. x z) (lambda y. q y) ->*
+        (lambda x. x z) (lambda y. q y) -> (lambda y. q y) z -> q z
+
+9.  #Assume that we have iszero and pred that work with regular numbers
+    num_to_c = fix (lambda cn.
+    lambda n. lambda s. lambda z.
+        if iszero n
+            then z
+            else s (cn (pred n) s z)
+            )
+
+10. y = lambda f. (lambda x. f (x x)) (lambda x. f (x x))
+    (lambda f. (lambda x. f (x x)) (lambda x. f (x x))) g ->
+    (lambda x. g (x x)) (lambda x. g (x x))) ->
+    g ((lambda x. g (x x)) (lambda x. g (x x)) ->
+    g ((lambda x. g (x x)) (lambda x. g (x x)) ->
+    g g ((lambda x. g (x x)) (lambda x. g (x x))) ->
+    #it will be eternal, so it is bespolezno!!!!
+
