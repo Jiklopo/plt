@@ -1,24 +1,24 @@
 fix = lambda f. (lambda x. f (lambda y. x x y)) (lambda x. f (lambda y. x x y));
 
-plus = fix (lambda plus.
+plus = fix (lambda p.
     lambda a. lambda b.
         if iszero a
             then b
-            else succ (plus (pred a) b)
+            else succ (p (pred a) b)
 );
 
-mult = fix (lambda mult.
+mult = fix (lambda m.
     lambda a. lambda b.
         if iszero a
             then 0
-            else plus b (mult (pred a) b)
+            else plus b (m (pred a) b)
 );
 
-fact = fix (lambda fact.
+fact = fix (lambda fct.
     lambda n.
         if iszero n
             then 1
-            else mult n (fact (pred n))
+            else mult n (fct (pred n))
 );
 /* >>>>>>> tests after this line <<<<< */
 fact 5;

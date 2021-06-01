@@ -1,3 +1,5 @@
+fix = lambda f. (lambda x. f (lambda y. x x y)) (lambda x. f (lambda y. x x y));
+
 tru = lambda t. lambda f. t;
 fls = lambda t. lambda f. f;
 and = lambda a. lambda b. a b fls;
@@ -17,8 +19,12 @@ predok = lambda n. fst (n step zz);
 
 plus = lambda a. lambda b. a scc b;
 
-cn = lambda cn. lambda n. lambda s. lambda z. if iszero(n) then z else s (cn cn (pred(n)) s z);
-real_to_c = lambda n. cn cn n;
+real_to_c = fix (lambda cn.
+    lambda n. lambda s. lambda z.
+        if iszero n
+            then z
+            else s (cn (pred n) s z)
+);
 /* >>>>>>> tests after this line <<<<< */
 c7 = real_to_c 7;
 c11 = real_to_c 11;
