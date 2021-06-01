@@ -5,4 +5,5 @@
 */*.cmo
 */*.cmi
 */parser.output
+*/f
 .vscode/
