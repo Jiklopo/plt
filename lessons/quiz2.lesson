@@ -36,3 +36,71 @@ f is of type (Nat -> (Bool -> Nat))
 Г, z:Nat |-- f2 = lambda x:Nat. lambda y:Bool. z
 Since we know type of, type of f2 is (Nat -> (Bool -> Nat))
 
+#how to define type of if term
+#arms must be of the same type, otherwise term is not well-typed
+t1 = if true then 1 else 2
+#type of t1 is Nat
+
+t2 = if true then 1 else false
+#t2 is not well-typed
+
+t3 = if true then (if false then false else false) else (if true then 1 else 2)
+#t3 is not well-typed.
+
+#QUIZ 2.2
+
+1. lambda x: Nat. lambda y: Nat -> Nat.
+                    if iszero(y 1) then iszero(x) else (plus x (y 0))
+
+    iszero(y 1): Bool
+        iszero: Nat -> Bool
+            (y 1): Nat
+                y: Nat -> Nat
+                1: Nat
+    #Guard is bool -> ok
+
+    iszero(x): Bool
+
+    plus x (y 0): Nat
+#Arms have different types, whole expression is wrong
+
+2. f:Bool -> Nat, x:Nat |-- lambda x: Bool. f (if x then false else x) 
+    
+    (lambda x: Bool. f (if x then false else x)): Bool -> Nat
+        if x then false else x: Bool
+        (f (if x then false else x)): Nat
+
+#Need to find context
+3. lambda x: Nat. if (f x) then (iszero(succ z)) else (lambda z: Nat. iszero z)
+        f: Nat -> Bool
+        z: Nat #e.g z is 1
+
+#QUIZ 2.1
+def f1(int x):
+    def f2(int->int y):
+        if ......
+
+1. lambda x: Nat. lambda y: Nat -> Nat.
+                    if (iszero (y 1)) then (plus x (y 0)) else x
+            (iszero (y 1)): Bool
+            (plus x (y 0)): Nat
+            x: Nat
+
+    Ans: Nat -> ((Nat -> Nat) -> Nat)
+
+2. f: Bool -> Bool |-- lambda x:Bool. f (if x then false else false)
+    (if x then false else false): Bool
+    f (if x then false else false): Bool
+    Ans: Bool -> Bool
+
+#Find context, so that term is well-typed
+3. lambda x: Nat.
+        if (f x) then (succ x) else ((f y) 4 0)
+        f: Nat -> Bool or Nat -> (Nat -> (Nat -> Nat)) #This is contradiction!!!
+        y: Nat
+
+        Ans: There is no correct context!
+
+4.Suppose we are using simply typed lambda calculus enriched with Nat and Bool (λNB).
+Let t → s and s:T. Does it imply that t:T? Yes
+iszero(2) -> False

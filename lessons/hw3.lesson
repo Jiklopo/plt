@@ -122,6 +122,14 @@ def cn(n, s, z):
         temp = s(temp)
     return temp
 
+#c_to_num
+c_to_num = lambda n. n (lambda x. succ x) 0
+
+#example
+c_to_num c2 ->* (lambda s. lambda z. s (s(z))) (lambda x. succ x) 0 ->*
+    (lambda x. succ x) ((lambda x. succ x) 0) ->* (lambda x. succ x) (succ 0) -> (lambda x. succ x) 1 -> 
+    succ 1 -> 2
+
 #example
 c3 succ 0 ->* succ(succ(succ(0))) ->* 3;
 
@@ -132,9 +140,10 @@ snd = lambda p. p fls;
 
 #example
 p = pair 1 2
-####pair 1 2 -> (lambda f. lambda s. lambda b. b f s) 1 2->* lambda b. b 1 2
-fst p -> (lambda p. p tru) p ->* 1
-snd p ->* 2
+####pair 1 2 -> (lambda f. lambda s. lambda b. b f s) 1 2->
+    (lambda s. lambda b. b 1 s) 2 ->* lambda b. b 1 2
+fst p -> (lambda p. p tru) p -> (lambda b. b 1 2) tru -> tru 1 2 -> 1
+snd p ->* fls 1 2 -> 2
 
 
 #SCC
@@ -204,18 +213,17 @@ iseq = lambda a. lambda b. and (leq a b) (leq b a)
 #RECURSION
 f1 = lambda a. f1 a; #not allowed
 
-def fact(n):
-    if n == 0:
-        return 1
-    return n * fact(n-1)
-
 #fixed-point combinator or Z-combinator
 fix = lambda f. (lambda x. f (lambda y. x x y)) (lambda x. f (lambda y. x x y));
 
 fix g ->* g fix g ->* ....
 
-
 #FACT
+def fact(n):
+    if n == 0:
+        return 1
+    return n * fact(n-1)
+
 g = lambda fct.
     lambda n.
         (iszro n) c1 (mult n (fct (pred n)))
@@ -264,6 +272,14 @@ lambda y. (lambda z. z z) (lambda a. a) -> lambda y. (lambda a. a) (lambda a. a)
 (lambda x. lambda y. (lambda z. z z) (lambda a. a x)) #cannot reduce inside abstractions
 (lambda x. lambda y. (lambda z. z z) x) (lambda a. a) -> 
     lambda y. (lambda z. z z) (lambda a. a)
+
+lambda y. (lambda z. z z) (lambda a. a)
+:=:
+def f1(y):
+    def f2(z):
+        return z(z)
+    def f3(a)
+        return a
 
 #free(global) and bound(local) variables
 int a;
